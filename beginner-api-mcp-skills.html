@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>처음 배우는 API · WebSocket · MCP · Skills · 6교시</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<style>
+:root{
+  --paper:#EAEDEA;
+  --surface:#FFFFFF;
+  --ink:#1B2320;
+  --muted:#5F6B65;
+  --line:#C8D0CB;
+  --line-soft:#E2E7E3;
+  --t1:#2F6B4F;
+  --t2:#B0601C;
+  --t3:#4A56A6;
+  --t4:#8E3566;
+  --accent:var(--t1);
+  --ok:#2F6B4F;
+  --bad:#B33B36;
+  --warn:#B0601C;
+  --dim:#8B958F;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;height:100%}
+body{font-family:var(--sans);color:var(--ink);background:var(--paper);-webkit-font-smoothing:antialiased}
+button{font-family:inherit;color:inherit}
+
+.deck{height:100vh;height:100dvh;display:flex;flex-direction:column}
+.topbar{flex:none;background:rgba(234,237,234,.96);backdrop-filter:blur(6px);
+  border-bottom:1px solid var(--line);padding:10px 18px 0}
+.brandline{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:9px}
+.brand{font-size:13.5px;font-weight:800;letter-spacing:-.02em}
+.brand em{font-style:normal;color:var(--muted);font-weight:500}
+.brand-sub{font-size:11.5px;color:var(--muted)}
+.rail{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;padding-bottom:9px}
+.seg{appearance:none;border:1px solid var(--line);background:#fff;border-radius:8px;text-align:left;
+  cursor:pointer;padding:7px 9px;transition:.16s;overflow:hidden}
+.seg .n{font-size:10.5px;color:var(--muted);display:block;font-weight:700}
+.seg .t{font-size:12px;font-weight:600;color:var(--muted);display:block;margin-top:1px;
+  white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+.seg:hover{border-color:var(--segc)}
+.seg[data-on="1"]{background:var(--segc);border-color:var(--segc)}
+.seg[data-on="1"] .n{color:rgba(255,255,255,.78)}
+.seg[data-on="1"] .t{color:#fff;font-weight:700}
+.seg:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+.pages{flex:1;position:relative;overflow:hidden}
+.page{position:absolute;inset:0;overflow-y:auto;padding:26px 18px 90px;display:none}
+.page.on{display:block;animation:fade .26s ease-out}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.wrap{max-width:1180px;margin:0 auto}
+.phead{margin-bottom:20px;border-top:4px solid var(--accent);padding-top:14px}
+.eyebrow{font-size:12px;letter-spacing:.02em;color:var(--accent);font-weight:800}
+.phead h1{font-size:clamp(24px,3.4vw,35px);line-height:1.2;letter-spacing:-.035em;margin:6px 0 8px;font-weight:800}
+.phead p{margin:0;color:var(--muted);font-size:14.5px;max-width:62ch;line-height:1.65}
+.cols{display:grid;grid-template-columns:264px minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:960px){.cols{grid-template-columns:1fr}}
+.brief{position:sticky;top:4px}
+@media (max-width:960px){.brief{position:static}}
+.brief h3{font-size:11.5px;letter-spacing:.02em;color:var(--muted);margin:0 0 10px;font-weight:700}
+.blist{list-style:none;margin:0 0 16px;padding:0}
+.blist li{padding:9px 0 9px 24px;font-size:13.5px;line-height:1.55;position:relative;color:#2A342F;
+  border-bottom:1px solid var(--line-soft)}
+.blist li::before{content:counter(w);counter-increment:w;position:absolute;left:0;top:10px;
+  width:17px;height:17px;border-radius:50%;background:var(--accent);color:#fff;
+  font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.blist{counter-reset:w}
+.blist li b{font-weight:700;color:var(--ink)}
+.goal{border-radius:8px;background:#fff;border:1px solid var(--line);padding:11px 13px;font-size:13px;line-height:1.6;color:#2A342F}
+.goal b{display:block;font-size:11px;color:var(--accent);margin-bottom:4px;font-weight:800}
+.word{font-family:var(--mono);font-size:12px;background:#F1F4F1;border:1px solid var(--line-soft);
+  border-radius:4px;padding:1px 5px;white-space:nowrap}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;
+  box-shadow:0 1px 3px rgba(27,35,32,.06);margin-bottom:16px;overflow:hidden}
+.panel-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:12px 15px;border-bottom:1px solid var(--line-soft);background:#FBFCFB}
+.panel-title{font-size:14px;font-weight:700}
+.panel-title span{font-size:11px;color:#fff;background:var(--accent);border-radius:20px;
+  padding:2px 9px;margin-right:9px;font-weight:700}
+.panel-note{font-size:12px;color:var(--muted)}
+.panel-body{padding:15px}
+.btnrow{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+.rowlab{font-size:11.5px;color:var(--muted);width:100%;margin:10px 0 2px;font-weight:600}
+.rowlab:first-child{margin-top:0}
+.btn{font-size:13px;padding:8px 13px;border-radius:7px;border:1px solid var(--line);
+  background:#FBFCFB;cursor:pointer;transition:.15s;white-space:nowrap}
+.btn:hover:not(:disabled){background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.pri:hover:not(:disabled){filter:brightness(.9);background:var(--accent);border-color:var(--accent);color:#fff}
+.btn[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+select.sel{font-size:13px;padding:7px 9px;border:1px solid var(--line);border-radius:7px;background:#fff;cursor:pointer}
+select.sel:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
+.inl{font-size:12.5px;color:var(--muted)}
+
+/* 말풍선 요약 — 이 덱의 서명 요소 */
+.say{margin:0;padding:13px 15px;border-top:1px solid var(--line-soft);background:#F6F8F6;
+  font-size:13.5px;line-height:1.6;color:#2A342F;position:relative}
+.say::before{content:"한 줄 정리";display:block;font-size:10.5px;color:var(--accent);font-weight:800;margin-bottom:3px}
+.say b{font-weight:700}
+.hint{font-size:13.5px;line-height:1.6;color:#2A342F;margin-top:12px;padding:11px 13px;border-radius:8px;
+  background:#F3F5F3;border-left:4px solid var(--line)}
+.hint.good{border-left-color:var(--ok);background:rgba(47,107,79,.07)}
+.hint.bad{border-left-color:var(--bad);background:rgba(179,59,54,.07)}
+.hint.warn{border-left-color:var(--warn);background:rgba(176,96,28,.09)}
+
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:700px){.two{grid-template-columns:1fr}}
+.card{border:1px solid var(--line);border-radius:9px;background:#FBFCFB;padding:12px}
+.card .ct{font-size:12.5px;font-weight:700;margin-bottom:8px;color:var(--muted)}
+.mono{font-family:var(--mono);font-size:12.5px;line-height:1.85}
+.term{font-family:var(--mono);font-size:12.5px;line-height:1.8;background:#1C2521;color:#DCE3DE;
+  border-radius:8px;padding:12px 14px;overflow-x:auto;white-space:pre-wrap;word-break:break-word}
+.term .g{color:#8ED6AC}.term .r{color:#F49A96}.term .d{color:#8B958F}.term .y{color:#EBBE62}.term .b{color:#96B7EE}
+
+/* 클릭 가능한 조각 */
+.z{cursor:pointer;border-radius:4px;padding:1px 3px;transition:.12s;border-bottom:2px dotted transparent}
+.z:hover{background:#FBE9C4}
+.z[data-hot="1"]{background:#F2C14E;color:#1C2521;font-weight:700}
+.slip{border:1px solid var(--line);border-radius:9px;background:#fff;padding:12px 14px;font-size:13.5px;line-height:2}
+.slip .lb{color:var(--muted);display:inline-block;min-width:76px}
+.cap{font-size:13.5px;line-height:1.6;margin-top:12px;padding:11px 13px;border-radius:8px;
+  background:#F3F5F3;border-left:4px solid var(--accent);min-height:44px}
+.cap b{color:var(--accent)}
+
+/* 선택 목록 */
+.pick{display:flex;flex-direction:column;gap:6px}
+.pickrow{display:flex;align-items:center;gap:10px;padding:11px 13px;border:1px solid var(--line);
+  border-radius:8px;background:#FBFCFB;cursor:pointer;text-align:left;width:100%;font-size:13.5px;transition:.15s}
+.pickrow:hover{border-color:var(--accent);background:#fff}
+.pickrow[data-hot="1"]{border-color:var(--accent);box-shadow:0 0 0 3px rgba(47,107,79,.14);background:#fff}
+.pickrow .qn{flex:1}
+.pickrow:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.pickrow.static{cursor:default}
+.pickrow.static:hover{border-color:var(--line);background:#FBFCFB}
+.tag{font-size:11px;padding:3px 9px;border-radius:20px;white-space:nowrap;font-weight:600}
+.tag.ok{background:rgba(47,107,79,.14);color:var(--ok)}
+.tag.no{background:rgba(179,59,54,.14);color:var(--bad)}
+.tag.wa{background:rgba(176,96,28,.16);color:var(--warn)}
+.tag.dm{background:#EDF0ED;color:var(--dim)}
+
+/* 화면 흉내 */
+.screen{border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#fff}
+.screen .bar{background:#EDF0ED;padding:7px 11px;font-size:11.5px;color:var(--muted);
+  border-bottom:1px solid var(--line-soft);display:flex;justify-content:space-between;gap:8px}
+.screen .body{padding:14px;text-align:center}
+.screen .big{font-size:34px;font-weight:800;letter-spacing:-.03em;line-height:1.1}
+.screen .sub{font-size:12px;color:var(--muted);margin-top:5px}
+.screen.stale .big{color:var(--bad)}
+.screen.fresh .big{color:var(--ok)}
+
+.tl{display:flex;flex-direction:column;gap:5px}
+.tlrow{display:flex;align-items:center;gap:10px;font-size:12.5px;padding:8px 11px;border-radius:7px;
+  background:#FBFCFB;border:1px solid var(--line-soft)}
+.tlrow .ic{width:74px;flex:none;font-size:11px;color:var(--muted);font-weight:600}
+.tlrow .du{margin-left:auto;font-size:11px;color:var(--muted)}
+.tlrow .tag{margin-left:auto}
+.tlrow.ev{background:rgba(176,96,28,.09);border-color:rgba(176,96,28,.3)}
+.tlrow.hit{background:rgba(47,107,79,.09);border-color:rgba(47,107,79,.33)}
+.tlrow.waste{color:var(--dim)}
+.tlrow.bad{background:rgba(179,59,54,.08);border-color:rgba(179,59,54,.32)}
+
+.count{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px}
+.count div{background:#F3F5F3;border-radius:8px;padding:9px 13px;font-size:12px;color:var(--muted)}
+.count div b{display:block;font-size:20px;color:var(--ink);font-weight:800;margin-top:2px}
+
+.nm{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:700px){.nm{grid-template-columns:1fr}}
+.nm svg{display:block;width:100%;height:auto;max-height:210px}
+
+.flowbox{display:flex;align-items:center;gap:0;flex-wrap:wrap;justify-content:center;padding:4px 0}
+.fnode{border:1px solid var(--line);border-radius:9px;padding:11px 14px;text-align:center;background:#FBFCFB;min-width:118px;transition:.25s}
+.fnode .fn{font-size:13px;font-weight:700}
+.fnode .fs{font-size:11px;color:var(--muted);display:block;margin-top:3px}
+.fnode[data-on="1"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.fnode[data-on="1"] .fs{color:rgba(255,255,255,.8)}
+.farrow{padding:0 8px;color:var(--muted);font-size:12px;text-align:center;min-width:56px}
+@media (max-width:560px){.flowbox{flex-direction:column;align-items:stretch}.farrow{padding:6px 0}}
+
+.footnav{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:9px;padding:12px;
+  background:linear-gradient(to top,var(--paper) 62%,rgba(234,237,234,0));pointer-events:none}
+.footnav button{pointer-events:auto;font-size:13px;padding:9px 17px;border-radius:22px;
+  border:1px solid var(--line);background:#fff;cursor:pointer;box-shadow:0 2px 9px rgba(27,35,32,.11);transition:.15s}
+.footnav button:hover:not(:disabled){background:var(--ink);color:#fff;border-color:var(--ink)}
+.footnav button:disabled{opacity:.35;cursor:not-allowed}
+.footnav .pos{pointer-events:none;display:flex;align-items:center;justify-content:center;font-size:12.5px;color:var(--muted);padding:0 5px}
+@media (max-width:700px){.rail{gap:4px}.seg .t{display:none}.seg{text-align:center;padding:7px 3px}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.001s!important;transition-duration:.001s!important}}
+</style>
+</head>
+<body>
+<div class="deck">
+  <header class="topbar">
+    <div class="brandline">
+      <div class="brand">처음 배우는 API · WebSocket · MCP · Skills</div>
+      <div class="brand-sub">50분 × 6교시 · 하루 완성 · 아무것도 몰라도 괜찮습니다</div>
+    </div>
+    <nav class="rail" id="rail" aria-label="교시 이동"></nav>
+  </header>
+
+  <main class="pages" id="pages">
+
+  <!-- ══ 1교시 ══ -->
+  <section class="page on" data-track="t1" id="p1">
+   <div class="wrap">
+    <div class="phead">
+      <div class="eyebrow">1교시</div>
+      <h1>API는 이미 매일 쓰고 있었습니다</h1>
+      <p>새로운 기술을 배우는 게 아닙니다. 앱에서 버튼을 누를 때마다 일어나던 일에 이름을 붙이는 시간입니다. 식당에서 주문하는 것과 똑같은 구조라는 걸 먼저 확인해 봅시다.</p>
+    </div>
+    <div class="cols">
+      <aside class="brief">
+        <h3>오늘 새로 배울 말은 넷뿐</h3>
+        <ul class="blist">
+          <li><b>요청</b> — 무언가 해달라고 보내는 것</li>
+          <li><b>응답</b> — 그에 대한 답</li>
+          <li><b>JSON</b> — 답을 적어 보내는 형식</li>
+          <li><b>상태 코드</b> — 잘 됐는지 알려주는 숫자</li>
+        </ul>
+        <div class="goal"><b>이 시간이 끝나면</b>웹사이트 뒤에서 무슨 일이 오가는지 눈으로 볼 수 있게 됩니다. 코드는 한 줄도 쓰지 않습니다.</div>
+      </aside>
+      <div class="lab">
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title"><span>실습 1</span>주문서와 요청은 같은 것</div>
+            <div class="panel-note">양쪽 아무 곳이나 눌러 보세요</div>
+          </div>
+          <div class="panel-body">
+            <div class="two">
+              <div class="card">
+                <div class="ct">식당에서 건네는 주문서</div>
+                <div class="slip" id="p1slip"></div>
+              </div>
+              <div class="card">
+                <div class="ct">컴퓨터가 보내는 요청</div>
+                <div class="term" id="p1req"></div>
+              </div>
+            </div>
+            <div class="cap" id="p1cap">왼쪽 주문서의 한 줄을 누르면, 오른쪽 요청에서 같은 역할을 하는 부분이 함께 표시됩니다.</div>
+          </div>
+          <div class="say" id="p1say"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title"><span>실습 2</span>JSON 읽는 법</div>
+            <div class="panel-note">기호를 눌러 보세요</div>
+          </div>
+          <div class="panel-body">
+            <div class="term" id="p1json"></div>
+            <div class="cap" id="p1jcap">중괄호와 대괄호, 콜론이 각각 무슨 뜻인지 눌러서 확인해 보세요.</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title"><span>실습 3</span>숫자가 알려주는 결과</div>
+            <div class="panel-note">상황을 눌러 보세요</div>
+          </div>
+          <div class="panel-body">
+            <div class="pick" id="p1codes"></div>
+            <div class="cap" id="p1ccap">상황을 누르면 어떤 숫자가 돌아오는지, 그 숫자가 무슨 뜻인지 알려 줍니다.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+   </div>
+  </section>
+
+  <!-- ══ 2교시 ══ -->
+  <section class="page" data-track="t1" id="p2">
+   <div class="wrap">
+    <div class="phead">
+      <div class="eyebrow">2교시</div>
+      <h1>이번엔 내가 답해주는 쪽이 됩니다</h1>
+      <p>1교시에는 남의 API를 불러 봤습니다. 이번엔 요청을 받아 답을 돌려주는 쪽을 직접 만듭니다. 코드 한 줄이 주소 하나를 만든다는 것만 이해하면 됩니다.</p>
+    </div>
+    <div class="cols">
+      <aside class="brief">
+        <h3>이번 시간 새 낱말</h3>
+        <ul class="blist">
+          <li><b>서버</b> — 요청을 기다리는 프로그램</li>
+          <li><b>주소(경로)</b> — 무엇을 달라는지 가리키는 이름</li>
+          <li><b>GET</b> — 보여줘</li>
+          <li><b>POST</b> — 새로 만들어줘</li>
+        </ul>
+        <div class="goal"><b>이 시간이 끝나면</b>주문 목록을 돌려주는 API를 직접 만들고, 브라우저에서 열어 볼 수 있게 됩니다.</div>
+      </aside>
+      <div class="lab">
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title"><span>실습 1</span>코드 한 줄이 주소 하나</div>
+            <div class="panel-note">코드 줄을 눌러 보세요</div>
+          </div>
+          <div class="panel-body">
+            <div class="two">
+              <div class="card">
+                <div class="ct">내가 쓴 코드</div>
+                <div class="term" id="p2code"></div>
+              </div>
+              <div class="card">
+                <div class="ct">그래서 생기는 주소와 답</div>
+                <div class="term" id="p2out"></div>
+              </div>
+            </div>
+            <div class="cap" id="p2cap">함수 위에 붙은 한 줄이 <b>주소</b>를 만들고, 함수가 돌려주는 값이 <b>답</b>이 됩니다.</div>
+          </div>
+          <div class="say" id="p2say"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title"><span>실습 2</span>주소를 바꾸면 답이 바뀐다</div>
+            <div class="panel-note">직접 골라 보세요</div>
+          </div>
+          <div class="panel-body">
+            <div class="btnrow">
+              <span class="inl">주소</span>
+              <select class="sel" id="p2path"></select>
+              <button class="btn pri" id="p2go">열어 보기</button>
+            </div>
+            <div class="term" id="p2res" style="margin-top:12px"></div>
+            <div class="hint" id="p2hint"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title"><span>실습 3</span>보여줘(GET)와 만들어줘(POST)</div>
+            <div class="panel-note">눌러 보면 차이가 보입니다</div>
+          </div>
+          <div class="panel-body">
+            <div class="btnrow">
+              <button class="btn" id="p2get">GET · 목록 보여줘</button>
+              <button class="btn pri" id="p2post">POST · 주문 하나 만들어줘</button>
+              <button class="btn" id="p2reset">처음부터</button>
+            </div>
+            <div class="term" id="p2list" style="margin-top:12px"></div>
+            <div class="hint" id="p2mhint"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+   </div>
+  </section>
+
+  <!-- ══ 3교시 ══ -->
+  <section class="page" data-track="t2" id="p3">
+   <div class="wrap">
+    <div class="phead">
+      <div class="eyebrow">3교시</div>
+      <h1>왜 새로고침을 해야 최신이 보일까</h1>
+      <p>가게 화면에 주문 수가 떠 있습니다. 다른 사람이 주문을 넣어도 내 화면은 그대로입니다. 이 문제를 푸는 방법이 세 가지 있고, 각각 대가가 다릅니다.</p>
+    </div>
+    <div class="cols">
+      <aside class="brief">
+        <h3>이번 시간 새 낱말</h3>
+        <ul class="blist">
+          <li><b>새로고침</b> — 내가 다시 물어보기</li>
+          <li><b>폴링</b> — 계속 반복해서 물어보기</li>
+          <li><b>연결 유지</b> — 선을 열어두고 기다리기</li>
+          <li><b>WebSocket</b> — 연결을 유지하는 대표 방법</li>
+        </ul>
+        <div class="goal"><b>이 시간이 끝나면</b>세 방법의 차이를 설명할 수 있고, 실시간 화면이 어떻게 만들어지는지 알게 됩니다.</div>
+      </aside>
+      <div class="lab">
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title"><span>실습 1</span>세 가지 방법 비교하기</div>
+            <div class="panel-note">시간을 한 칸씩 진행시켜 보세요</div>
+          </div>
+          <div class="panel-body">
+            <div class="btnrow">
+              <span class="inl">방법</span>
+              <select class="sel" id="p3mode"></select>
+              <button class="btn pri" id="p3step">시간 1초 진행</button>
+              <button class="btn" id="p3jump">10초 한번에</button>
+              <button class="btn" id="p3reset">처음부터</button>
+            </div>
+            <div class="two" style="margin-top:13px">
+              <div>
+                <div class="card">
+                  <div class="ct">실제 가게 (서버)</div>
+                  <div class="screen">
+                    <div class="bar"><span>서버가 알고 있는 값</span><span id="p3clock">0초</span></div>
+                    <div class="body"><div class="big" id="p3server">0</div><div class="sub">건</div></div>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div class="card">
+                  <div class="ct">내 화면 (클라이언트)</div>
+                  <div class="screen" id="p3screenbox">
+                    <div class="bar"><span>내 화면에 보이는 값</span><span id="p3state"></span></div>
+                    <div class="body"><div class="big" id="p3client">0</div><div class="sub" id="p3sub">건</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="count" id="p3count"></div>
+            <div class="tl" id="p3log" style="margin-top:12px"></div>
+            <div class="hint" id="p3hint"></div>
+          </div>
+          <div class="say" id="p3say"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title"><span>실습 2</span>연결이 끊기면 어떻게 될까</div>
+            <div class="panel-note">연결 유지 방식의 약점</div>
+          </div>
+          <div class="panel-body">
+            <div class="btnrow">
+              <button class="btn pri" id="p3cut">연결 끊어 보기</button>
+              <button class="btn" id="p3fix">다시 연결하기</button>
+            </div>
+            <div class="flowbox" id="p3conn" style="margin-top:13px"></div>
+            <div class="hint" id="p3chint"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+   </div>
+  </section>
+
+  <!-- ══ 4교시 ══ -->
+  <section class="page" data-track="t3" id="p4">
+   <div class="wrap">
+    <div class="phead">
+      <div class="eyebrow">4교시</div>
+      <h1>AI는 왜 내 폴더를 못 볼까</h1>
+      <p>AI에게 파이썬 문법을 물으면 잘 답합니다. 그런데 "내 폴더에 뭐 있어?"라고 물으면 못 합니다. 아는 것과 볼 수 있는 것은 다르기 때문입니다. MCP는 이 틈을 메우는 약속입니다.</p>
+    </div>
+    <div class="cols">
+      <aside class="brief">
+        <h3>이번 시간 새 낱말</h3>
+        <ul class="blist">
+          <li><b>도구</b> — AI가 부를 수 있는 기능</li>
+          <li><b>MCP</b> — 도구를 붙이는 공통 약속</li>
+          <li><b>MCP 서버</b> — 도구를 제공하는 프로그램</li>
+          <li><b>설정 파일</b> — 무엇을 붙일지 적어두는 곳</li>
+        </ul>
+        <div class="goal"><b>이 시간이 끝나면</b>남이 만든 MCP 서버를 붙여서 AI가 내 폴더를 읽게 만들 수 있습니다.</div>
+      </aside>
+      <div class="lab">
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title"><span>실습 1</span>AI가 답할 수 있는 것과 없는 것</div>
+            <div class="panel-note">질문을 눌러 보세요</div>
+          </div>
+          <div class="panel-body">
+            <div class="btnrow">
+              <button class="btn" id="p4tool" aria-pressed="false">도구 연결하기</button>
+              <span class="inl" id="p4toolnote"></span>
+            </div>
+            <div class="pick" id="p4qs" style="margin-top:12px"></div>
+            <div class="cap" id="p4cap">질문을 눌러 AI가 답할 수 있는지 확인해 보세요. 그다음 위 버튼으로 도구를 붙이고 다시 눌러 보세요.</div>
+          </div>
+          <div class="say" id="p4say"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title"><span>실습 2</span>AI가 도구를 부르는 순서</div>
+            <div class="panel-note">한 단계씩 진행해 보세요</div>
+          </div>
+          <div class="panel-body">
+            <div class="btnrow">
+              <button class="btn pri" id="p4next">다음 단계</button>
+              <button class="btn" id="p4sreset">처음부터</button>
+            </div>
+            <div class="flowbox" id="p4flow" style="margin-top:13px"></div>
+            <div class="hint" id="p4fhint"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title"><span>실습 3</span>왜 공통 약속이 필요할까</div>
+            <div class="panel-note">선을 세어 보세요</div>
+          </div>
+          <div class="panel-body">
+            <div class="btnrow">
+              <span class="inl">AI 앱</span><select class="sel" id="p4n"></select>
+              <span class="inl">도구</span><select class="sel" id="p4m"></select>
+            </div>
+            <div class="nm" id="p4nm" style="margin-top:13px"></div>
+            <div class="hint" id="p4nhint"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+   </div>
+  </section>
+
+  <!-- ══ 5교시 ══ -->
+  <section class="page" data-track="t3" id="p5">
+   <div class="wrap">
+    <div class="phead">
+      <div class="eyebrow">5교시</div>
+      <h1>2교시에 만든 API를 AI에게 열어주기</h1>
+      <p>새로 배울 게 많지 않습니다. 이미 만든 함수 위에 한 줄만 붙이면 AI가 부를 수 있는 도구가 됩니다. 다만 AI는 코드를 읽지 않고 설명을 읽는다는 점이 중요합니다.</p>
+    </div>
+    <div class="cols">
+      <aside class="brief">
+        <h3>이번 시간 새 낱말</h3>
+        <ul class="blist">
+          <li><b>@mcp.tool()</b> — 이 함수를 도구로</li>
+          <li><b>설명문</b> — AI가 읽는 사용 안내</li>
+          <li><b>Inspector</b> — 도구를 확인하는 화면</li>
+          <li><b>권한</b> — AI에게 무엇까지 허락할지</li>
+        </ul>
+        <div class="goal"><b>이 시간이 끝나면</b>내 주문 API를 AI가 부를 수 있게 만들고, 설명문이 왜 중요한지 알게 됩니다.</div>
+      </aside>
+      <div class="lab">
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title"><span>실습 1</span>내 함수가 도구로 보이기까지</div>
+            <div class="panel-note">코드 조각을 눌러 보세요</div>
+          </div>
+          <div class="panel-body">
+            <div class="two">
+              <div class="card">
+                <div class="ct">내가 쓴 파이썬 함수</div>
+                <div class="term" id="p5code"></div>
+              </div>
+              <div class="card">
+                <div class="ct">AI 눈에 보이는 도구</div>
+                <div class="term" id="p5view"></div>
+              </div>
+            </div>
+            <div class="cap" id="p5cap">왼쪽 코드의 어느 부분이 오른쪽의 무엇이 되는지 눌러서 확인해 보세요.</div>
+          </div>
+          <div class="say" id="p5say"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title"><span>실습 2</span>설명을 대충 쓰면 생기는 일</div>
+            <div class="panel-note">설명 방식을 바꿔 보세요</div>
+          </div>
+          <div class="panel-body">
+            <div class="btnrow" id="p5modes"></div>
+            <div class="two" style="margin-top:12px">
+              <div class="card">
+                <div class="ct">AI에게 보이는 도구 두 개</div>
+                <div class="term" id="p5tools"></div>
+              </div>
+              <div class="card">
+                <div class="ct">"주문 좀 보여줘" 라고 하면</div>
+                <div class="term" id="p5pick"></div>
+              </div>
+            </div>
+            <div class="hint" id="p5hint"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title"><span>실습 3</span>붙인 도구만큼 할 수 있다</div>
+            <div class="panel-note">권한을 바꿔 보세요</div>
+          </div>
+          <div class="panel-body">
+            <div class="btnrow" id="p5perms"></div>
+            <div class="pick" id="p5acts" style="margin-top:12px"></div>
+            <div class="hint" id="p5phint"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+   </div>
+  </section>
+
+  <!-- ══ 6교시 ══ -->
+  <section class="page" data-track="t4" id="p6">
+   <div class="wrap">
+    <div class="phead">
+      <div class="eyebrow">6교시</div>
+      <h1>할 수는 있는데 잘 못할 때</h1>
+      <p>도구를 아무리 붙여도 "우리 회사 양식대로"는 해결되지 않습니다. 능력이 없는 게 아니라 방법을 모르는 것이기 때문입니다. 마지막으로 오늘 배운 넷을 언제 쓰는지 정리합니다.</p>
+    </div>
+    <div class="cols">
+      <aside class="brief">
+        <h3>이번 시간 새 낱말</h3>
+        <ul class="blist">
+          <li><b>Skill</b> — 잘하는 방법을 적어둔 안내서</li>
+          <li><b>SKILL.md</b> — 그 안내서 파일</li>
+          <li><b>설명(description)</b> — 언제 쓸지 알려주는 줄</li>
+          <li><b>도구와 방법</b> — 둘은 다른 문제</li>
+        </ul>
+        <div class="goal"><b>이 시간이 끝나면</b>SKILL.md를 한 장 쓸 수 있고, 넷 중 무엇을 쓸지 고를 수 있습니다.</div>
+      </aside>
+      <div class="lab">
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title"><span>실습 1</span>도구를 늘려도 안 되는 문제</div>
+            <div class="panel-note">부탁을 눌러 보세요</div>
+          </div>
+          <div class="panel-body">
+            <div class="btnrow" id="p6haves"></div>
+            <div class="pick" id="p6asks" style="margin-top:12px"></div>
+            <div class="cap" id="p6cap">위에서 무엇을 붙였는지 바꿔 가며, 각 부탁이 해결되는지 확인해 보세요.</div>
+          </div>
+          <div class="say" id="p6say"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title"><span>실습 2</span>SKILL.md 한 장 읽어보기</div>
+            <div class="panel-note">각 부분을 눌러 보세요</div>
+          </div>
+          <div class="panel-body">
+            <div class="term" id="p6skill"></div>
+            <div class="cap" id="p6scap">이 파일의 각 부분이 무슨 역할인지 눌러서 확인해 보세요.</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title"><span>실습 3</span>설명을 어떻게 쓰느냐에 달렸다</div>
+            <div class="panel-note">설명을 바꿔 보세요</div>
+          </div>
+          <div class="panel-body">
+            <div class="btnrow" id="p6descs"></div>
+            <div class="term" id="p6desc" style="margin-top:11px"></div>
+            <div class="tl" id="p6fires" style="margin-top:11px"></div>
+            <div class="hint" id="p6dhint"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title"><span>실습 4</span>오늘의 마무리 — 무엇을 쓸까</div>
+            <div class="panel-note">상황을 눌러 보세요</div>
+          </div>
+          <div class="panel-body">
+            <div class="pick" id="p6cases"></div>
+            <div class="cap" id="p6ccap">각 상황이 오늘 배운 넷 중 무엇에 해당하는지 알려 줍니다.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+   </div>
+  </section>
+
+  </main>
+
+  <nav class="footnav">
+    <button id="navPrev">← 이전 교시</button>
+    <div class="pos" id="navPos">1 / 6</div>
+    <button id="navNext">다음 교시 →</button>
+  </nav>
+</div>
+
+<script>
+"use strict";
+function $(id){ return document.getElementById(id); }
+function el(t,c,x){ var e=document.createElement(t); if(c) e.className=c; if(x!=null) e.textContent=x; return e; }
+function on(id,fn){ var e=$(id); if(e) e.addEventListener("click",fn); }
+function setHTML(id,h){ var e=$(id); if(e) e.innerHTML=h; }
+function setHint(id,msg,kind){ var e=$(id); if(!e) return; e.className="hint"+(kind?(" "+kind):""); e.innerHTML=msg; }
+function say(id,msg){ setHTML(id,msg); }
+function fill(id,opts,val){
+  var s=$(id); if(!s) return; s.innerHTML="";
+  opts.forEach(function(o){
+    var v=(typeof o==="string")?o:o.v, t=(typeof o==="string")?o:o.t;
+    var op=el("option",null,t); op.value=v; if(v===val) op.selected=true; s.appendChild(op);
+  });
+}
+/* 조각 클릭 연결 도우미 — 여러 영역에서 같은 키를 켜고 끈다 */
+function linkZones(boxes, onPick){
+  var hot=null;
+  function paint(){
+    boxes.forEach(function(id){
+      var zs=$(id).querySelectorAll("[data-k]");
+      for(var i=0;i<zs.length;i++)
+        zs[i].setAttribute("data-hot", (hot && zs[i].getAttribute("data-k")===hot) ? "1":"0");
+    });
+  }
+  function bind(){
+    boxes.forEach(function(id){
+      var zs=$(id).querySelectorAll("[data-k]");
+      for(var i=0;i<zs.length;i++){
+        (function(z){
+          if(z.getAttribute("data-bound")==="1") return;
+          z.setAttribute("data-bound","1");
+          z.addEventListener("click",function(){ hot=z.getAttribute("data-k"); paint(); onPick(hot); });
+        })(zs[i]);
+      }
+    });
+    paint();
+  }
+  return bind;
+}
+
+/* ── 네비 ── */
+var LESSONS=[
+ {id:"p1",n:"1교시",t:"API란?",c:"var(--t1)"},
+ {id:"p2",n:"2교시",t:"API 만들기",c:"var(--t1)"},
+ {id:"p3",n:"3교시",t:"실시간",c:"var(--t2)"},
+ {id:"p4",n:"4교시",t:"MCP란?",c:"var(--t3)"},
+ {id:"p5",n:"5교시",t:"MCP 만들기",c:"var(--t3)"},
+ {id:"p6",n:"6교시",t:"Skills·정리",c:"var(--t4)"}
+];
+var cur=0;
+(function(){
+  var r=$("rail");
+  LESSONS.forEach(function(L,i){
+    var b=el("button","seg");
+    b.style.setProperty("--segc",L.c);
+    b.appendChild(el("span","n",L.n));
+    b.appendChild(el("span","t",L.t));
+    b.addEventListener("click",function(){ go(i); });
+    r.appendChild(b);
+  });
+})();
+function go(i){
+  if(i<0||i>=LESSONS.length) return;
+  cur=i;
+  LESSONS.forEach(function(L,k){ var p=$(L.id); if(p) p.classList.toggle("on",k===i); });
+  var segs=$("rail").children;
+  for(var k=0;k<segs.length;k++) segs[k].setAttribute("data-on",k===i?"1":"0");
+  $("navPos").textContent=(i+1)+" / 6";
+  $("navPrev").disabled=(i===0);
+  $("navNext").disabled=(i===LESSONS.length-1);
+  var pg=$(LESSONS[i].id); if(pg) pg.scrollTop=0;
+}
+on("navPrev",function(){ go(cur-1); });
+on("navNext",function(){ go(cur+1); });
+document.addEventListener("keydown",function(e){
+  var t=e.target&&e.target.tagName;
+  if(t==="INPUT"||t==="TEXTAREA"||t==="SELECT") return;
+  if(e.key==="ArrowRight") go(cur+1);
+  if(e.key==="ArrowLeft") go(cur-1);
+});
+
+/* ════ 1교시 ════ */
+var P1MAP={
+  who:"<b>어디에 부탁하는가</b> · 주문서는 이 식당에, 요청은 이 주소(서버)에 갑니다. 인터넷에서는 가게 이름 대신 주소를 씁니다.",
+  what:"<b>무엇을 해달라는가</b> · 주문서의 \u201C주세요\u201D가 요청에서는 <span class='word'>GET</span> 입니다. 보여달라는 뜻이죠. 새로 만들어달라면 <span class='word'>POST</span> 를 씁니다.",
+  item:"<b>무엇에 대해</b> · 메뉴 이름이 곧 <span class='word'>/orders</span> 같은 주소가 됩니다. 무엇을 달라는지 가리키는 이름입니다.",
+  who2:"<b>누가 부탁하는가</b> · 식당에서는 얼굴을 보지만, 인터넷에서는 얼굴이 안 보이므로 신분증 같은 것을 함께 보냅니다. 이게 인증입니다.",
+  form:"<b>어떤 형식으로 받을까</b> · \u201C포장이요\u201D처럼 답을 어떤 모양으로 줄지 미리 알려 줍니다. 보통 JSON 형식으로 달라고 합니다."
+};
+function p1Bind(){
+  setHTML("p1slip",
+    '<div><span class="lb">가게</span><span class="z" data-k="who">맛있는 김밥집</span></div>'+
+    '<div><span class="lb">부탁</span><span class="z" data-k="what">주세요 (보여주세요)</span></div>'+
+    '<div><span class="lb">메뉴</span><span class="z" data-k="item">참치김밥</span></div>'+
+    '<div><span class="lb">손님</span><span class="z" data-k="who2">3번 테이블 회원증</span></div>'+
+    '<div><span class="lb">형식</span><span class="z" data-k="form">포장해 주세요</span></div>');
+  setHTML("p1req",
+    '<span class="b z" data-k="what">GET</span> <span class="z" data-k="item">/orders</span> HTTP/1.1\n'+
+    '<span class="d">Host:</span> <span class="z" data-k="who">shop.example.com</span>\n'+
+    '<span class="d">Authorization:</span> <span class="z" data-k="who2">Bearer 회원증번호</span>\n'+
+    '<span class="d">Accept:</span> <span class="z" data-k="form">application/json</span>');
+  var bind1=linkZones(["p1slip","p1req"],function(k){ setHTML("p1cap",P1MAP[k]); });
+  bind1();
+  say("p1say","요청은 <b>어디에 · 무엇을 · 어떻게</b> 세 가지를 적어 보내는 주문서입니다. 특별할 게 없습니다.");
+
+  var JMAP={
+    brace:"<b>중괄호 { }</b> · 하나의 덩어리를 뜻합니다. 주문 <u>한 건</u>의 정보가 여기 묶여 있습니다.",
+    bracket:"<b>대괄호 [ ]</b> · 여러 개가 줄지어 있다는 뜻입니다. 지금은 주문이 두 건 들어 있습니다.",
+    key:"<b>이름(키)</b> · 왼쪽은 항목의 이름입니다. \u201Cqty\u201D 는 수량이라는 뜻이죠.",
+    colon:"<b>콜론 :</b> · 왼쪽 이름에 대한 값이 오른쪽이라는 표시입니다. \u201C이름은 이것\u201D 이라고 읽으면 됩니다.",
+    str:"<b>따옴표가 있으면 글자</b> · \u201C참치김밥\u201D 은 글자입니다. 사람이 읽는 이름이나 문장에 씁니다.",
+    numv:"<b>따옴표가 없으면 숫자</b> · 2 는 숫자입니다. 더하거나 비교할 수 있는 값이죠. \u201C2\u201D 와 2 는 다릅니다."
+  };
+  setHTML("p1json",
+    '<span class="z" data-k="bracket">[</span>\n'+
+    '  <span class="z" data-k="brace">{</span> <span class="y z" data-k="key">"item"</span><span class="z" data-k="colon">:</span> '+
+    '<span class="g z" data-k="str">"참치김밥"</span>, <span class="y">"qty"</span>: <span class="b z" data-k="numv">2</span> <span class="z" data-k="brace">}</span>,\n'+
+    '  <span class="z" data-k="brace">{</span> <span class="y">"item"</span>: <span class="g">"라면"</span>, <span class="y">"qty"</span>: <span class="b">1</span> <span class="z" data-k="brace">}</span>\n'+
+    '<span class="z" data-k="bracket">]</span>');
+  var bind2=linkZones(["p1json"],function(k){ setHTML("p1jcap",JMAP[k]); });
+  bind2();
+
+  var CODES=[
+    {q:"있는 주소로 잘 물어봤을 때", code:"200", tag:"ok",
+     w:"<b>200 · 잘 됐어요</b> · 가장 흔한 답입니다. 원한 걸 그대로 받았다는 뜻입니다."},
+    {q:"없는 주소나 없는 주문 번호를 물었을 때", code:"404", tag:"no",
+     w:"<b>404 · 그런 건 없어요</b> · 인터넷에서 가장 유명한 숫자죠. 주소를 잘못 적었거나 이미 지워진 것입니다."},
+    {q:"회원증을 안 보여줬을 때", code:"401", tag:"no",
+     w:"<b>401 · 누구신지 모르겠어요</b> · 로그인이 필요하다는 뜻입니다. 주소는 맞지만 신분 확인이 안 된 상태입니다."},
+    {q:"주문 내용을 이상하게 적어 보냈을 때", code:"422", tag:"wa",
+     w:"<b>422 · 적어 보낸 내용이 이상해요</b> · 주소도 맞고 신분도 확인됐는데, 보낸 내용의 형식이 틀린 경우입니다. 404와 헷갈리기 쉬운데 원인이 다릅니다."},
+    {q:"가게 쪽에서 사고가 났을 때", code:"500", tag:"no",
+     w:"<b>500 · 우리 쪽 문제예요</b> · 내가 잘못한 게 아닙니다. 서버에서 오류가 난 것이라 잠시 뒤 다시 시도해 보면 됩니다."}
+  ];
+  var cb=$("p1codes");
+  CODES.forEach(function(C,i){
+    var b=el("button","pickrow"); b.type="button";
+    b.appendChild(el("span","qn",C.q));
+    b.appendChild(el("span","tag dm","?"));
+    b.addEventListener("click",function(){
+      var rows=cb.querySelectorAll(".pickrow");
+      for(var j=0;j<rows.length;j++){
+        rows[j].setAttribute("data-hot", j===i?"1":"0");
+        var t=rows[j].querySelector(".tag");
+        t.textContent = j===i ? CODES[j].code : "?";
+        t.className = j===i ? ("tag "+CODES[j].tag) : "tag dm";
+      }
+      setHTML("p1ccap",C.w);
+    });
+    cb.appendChild(b);
+  });
+}
+
+/* ════ 2교시 ════ */
+var P2MAP={
+  route:"<b>이 한 줄이 주소를 만듭니다</b> · <span class='word'>@app.get(\"/orders\")</span> 는 \u201C누가 /orders 를 보여달라고 하면 아래 함수를 실행해라\u201D 는 뜻입니다.",
+  fname:"<b>함수 이름</b> · 사람이 알아보기 위한 이름일 뿐, 주소와는 상관없습니다. 주소는 위의 한 줄이 정합니다.",
+  ret:"<b>돌려주는 값이 곧 답</b> · 함수가 return 한 것이 그대로 응답 내용이 됩니다. 파이썬 목록은 자동으로 JSON 으로 바뀝니다.",
+  route2:"<b>주소에 빈칸을 둘 수 있습니다</b> · <span class='word'>{order_id}</span> 부분에 아무 숫자나 들어올 수 있고, 그 값이 함수의 입력으로 전달됩니다.",
+  param:"<b>주소의 빈칸이 함수 입력으로</b> · /orders/7 로 요청하면 order_id 에 7 이 들어옵니다. 주소와 함수가 이렇게 이어집니다.",
+  err:"<b>없으면 404 를 돌려줍니다</b> · 1교시에서 본 그 숫자입니다. 직접 정해서 돌려줄 수 있습니다."
+};
+function p2Bind(){
+  setHTML("p2code",
+    '<span class="d">from</span> fastapi <span class="d">import</span> FastAPI, HTTPException\n'+
+    'app = FastAPI()\n\n'+
+    'ORDERS = {<span class="b">7</span>: {"item": "참치김밥", "qty": <span class="b">2</span>}}\n\n'+
+    '<span class="y z" data-k="route">@app.get("/orders")</span>\n'+
+    '<span class="d">def</span> <span class="z" data-k="fname">list_orders</span>():\n'+
+    '    <span class="d">return</span> <span class="z" data-k="ret">list(ORDERS.values())</span>\n\n'+
+    '<span class="y z" data-k="route2">@app.get("/orders/{order_id}")</span>\n'+
+    '<span class="d">def</span> get_order(<span class="z" data-k="param">order_id: int</span>):\n'+
+    '    <span class="d">if</span> order_id <span class="d">not in</span> ORDERS:\n'+
+    '        <span class="r z" data-k="err">raise HTTPException(404)</span>\n'+
+    '    <span class="d">return</span> ORDERS[order_id]');
+  setHTML("p2out",
+    '<span class="d">이 주소가 생깁니다</span>\n'+
+    '<span class="z" data-k="route">GET /orders</span>\n'+
+    '  <span class="d">→</span> <span class="g z" data-k="ret">[{"item": "참치김밥", "qty": 2}]</span>\n\n'+
+    '<span class="z" data-k="route2">GET /orders/<span class="b z" data-k="param">7</span></span>\n'+
+    '  <span class="d">→</span> <span class="g">{"item": "참치김밥", "qty": 2}</span>\n\n'+
+    '<span class="z" data-k="route2">GET /orders/<span class="b">999</span></span>\n'+
+    '  <span class="d">→</span> <span class="r z" data-k="err">404 Not Found</span>');
+  var bind=linkZones(["p2code","p2out"],function(k){ setHTML("p2cap",P2MAP[k]); });
+  bind();
+  say("p2say","함수 위의 <b>한 줄이 주소를 만들고</b>, 함수가 <b>돌려주는 값이 답</b>이 됩니다. API 만들기는 이게 전부입니다.");
+
+  fill("p2path",[{v:"/orders",t:"/orders  (목록 전체)"},{v:"/orders/7",t:"/orders/7  (있는 번호)"},
+                 {v:"/orders/999",t:"/orders/999  (없는 번호)"},{v:"/order",t:"/order  (오타)"}],"/orders");
+  function pGo(){
+    var v=$("p2path").value;
+    if(v==="/orders"){
+      setHTML("p2res",'<span class="d">GET</span> /orders\n\n<span class="g">200 OK</span>\n[{"item": "참치김밥", "qty": 2}]');
+      setHint("p2hint","목록 전체를 돌려줍니다. <b>대괄호</b>로 감싸져 있죠 — 여러 개라는 뜻입니다.","good");
+    } else if(v==="/orders/7"){
+      setHTML("p2res",'<span class="d">GET</span> /orders/7\n\n<span class="g">200 OK</span>\n{"item": "참치김밥", "qty": 2}');
+      setHint("p2hint","주문 하나만 돌려줍니다. 이번엔 <b>중괄호</b> 하나입니다 — 한 덩어리라는 뜻입니다.","good");
+    } else if(v==="/orders/999"){
+      setHTML("p2res",'<span class="d">GET</span> /orders/999\n\n<span class="r">404 Not Found</span>');
+      setHint("p2hint","주소 형식은 맞지만 <b>999번 주문이 없습니다.</b> 코드에서 직접 404를 돌려주도록 적어 두었기 때문입니다.","warn");
+    } else {
+      setHTML("p2res",'<span class="d">GET</span> /order\n\n<span class="r">404 Not Found</span>');
+      setHint("p2hint","<b>orders 를 order 로 잘못 적었습니다.</b> 이런 주소는 만든 적이 없으니 404가 나옵니다.<br>"+
+        "실습 중 404가 나오면 <b>먼저 주소 오타부터 확인</b>하세요. 가장 흔한 원인입니다.","bad");
+    }
+  }
+  $("p2path").addEventListener("change",pGo);
+  on("p2go",pGo);
+  pGo();
+
+  var M={items:[{item:"참치김밥",qty:2}], gets:0, posts:0};
+  function mRender(msg,kind){
+    setHTML("p2list",
+      '<span class="d">현재 저장된 주문 ('+M.items.length+'건)</span>\n'+
+      '<span class="g">'+JSON.stringify(M.items)+'</span>\n\n'+
+      '<span class="d">지금까지 GET '+M.gets+'번 · POST '+M.posts+'번</span>');
+    if(msg) setHint("p2mhint",msg,kind);
+  }
+  on("p2get",function(){
+    M.gets++; mRender("GET 은 <b>보여만 줍니다.</b> 몇 번을 눌러도 주문 개수가 그대로인 것을 보세요.","good");
+  });
+  on("p2post",function(){
+    M.posts++; M.items.push({item:"라면",qty:1});
+    mRender("POST 는 <b>새로 만듭니다.</b> 누를 때마다 주문이 하나씩 늘어납니다.<br>"+
+      "그래서 실수로 두 번 누르면 두 건이 만들어집니다. <b>보여주는 것과 바꾸는 것은 반드시 구분</b>해야 하는 이유입니다.","warn");
+  });
+  on("p2reset",function(){
+    M.items=[{item:"참치김밥",qty:2}]; M.gets=0; M.posts=0;
+    mRender("처음 상태로 돌렸습니다.");
+  });
+  mRender("두 버튼을 번갈아 눌러 보세요. 무엇이 달라지는지 숫자를 보면 됩니다.");
+}
+
+/* ════ 3교시 ════ */
+var P3={mode:"manual", t:0, server:0, client:0, reqs:0, waste:0, lastSeen:0, log:[], cut:false};
+var P3EVENTS=[3,7];
+function p3Reset(){
+  P3.t=0; P3.server=0; P3.client=0; P3.reqs=0; P3.waste=0; P3.lastSeen=0; P3.log=[];
+  if(P3.mode==="live"){ P3.reqs=1; P3.log.push({t:0,k:"conn",txt:"연결을 열었습니다 (요청 1번)"}); }
+  p3Render();
+}
+function p3Tick(){
+  if(P3.t>=10) return;
+  P3.t++;
+  var t=P3.t;
+  if(P3EVENTS.indexOf(t)>=0){
+    P3.server++;
+    P3.log.push({t:t,k:"ev",txt:"다른 손님이 주문했습니다 → 서버는 "+P3.server+"건"});
+    if(P3.mode==="live"){
+      P3.client=P3.server;
+      P3.log.push({t:t,k:"hit",txt:"열려 있는 연결로 <b>바로 전달</b>되어 화면이 바뀜"});
+    }
+  }
+  if(P3.mode==="poll" && t%2===0){
+    P3.reqs++;
+    if(P3.client!==P3.server){
+      P3.client=P3.server;
+      P3.log.push({t:t,k:"hit",txt:"물어봤더니 <b>새 소식이 있었습니다</b> → 화면 갱신"});
+    } else {
+      P3.waste++;
+      P3.log.push({t:t,k:"waste",txt:"물어봤지만 <b>바뀐 게 없었습니다</b> (헛수고)"});
+    }
+  }
+  p3Render();
+}
+function p3Refresh(){
+  P3.reqs++;
+  if(P3.client!==P3.server){
+    P3.client=P3.server;
+    P3.log.push({t:P3.t,k:"hit",txt:"새로고침 → 화면이 최신이 되었습니다"});
+  } else {
+    P3.waste++;
+    P3.log.push({t:P3.t,k:"waste",txt:"새로고침했지만 바뀐 게 없었습니다"});
+  }
+  p3Render();
+}
+function p3Render(){
+  $("p3clock").textContent=P3.t+"초";
+  $("p3server").textContent=String(P3.server);
+  $("p3client").textContent=String(P3.client);
+  var stale=(P3.client!==P3.server);
+  $("p3screenbox").className="screen "+(stale?"stale":"fresh");
+  $("p3state").textContent=stale?"낡음":"최신";
+  $("p3sub").textContent=stale?"건 — 실제와 다릅니다":"건 — 실제와 같습니다";
+
+  var c=$("p3count");
+  c.innerHTML="";
+  [["보낸 요청",P3.reqs],["헛수고한 요청",P3.waste],["지금 차이",Math.abs(P3.server-P3.client)+"건"]].forEach(function(p){
+    var d=el("div"); d.appendChild(document.createTextNode(p[0]));
+    d.appendChild(el("b",null,String(p[1])));
+    c.appendChild(d);
+  });
+
+  var lg=$("p3log");
+  lg.innerHTML="";
+  if(!P3.log.length){
+    lg.appendChild(el("div","tlrow waste","시간을 진행시키면 여기에 무슨 일이 있었는지 기록됩니다."));
+  } else {
+    P3.log.slice(-7).forEach(function(L){
+      var r=el("div","tlrow "+(L.k==="ev"?"ev":L.k==="hit"?"hit":L.k==="waste"?"waste":""));
+      r.appendChild(el("span","ic",L.t+"초"));
+      var s=el("span","tx"); s.innerHTML=L.txt; r.appendChild(s);
+      lg.appendChild(r);
+    });
+  }
+
+  var msg;
+  if(P3.mode==="manual"){
+    msg="<b>내가 눌러야만</b> 최신이 됩니다. 누르지 않으면 화면은 계속 낡은 값을 보여 줍니다.<br>"+
+        "\u201C새로고침 눌러 보세요\u201D 라고 안내해야 하는 서비스가 이 방식입니다.";
+    $("p3jump").textContent="새로고침 하기";
+  } else if(P3.mode==="poll"){
+    msg="2초마다 자동으로 물어봅니다. 내가 안 눌러도 최신이 되지만, <b>대부분은 헛수고</b>입니다.<br>"+
+        "간격을 줄이면 더 빨리 알지만 헛수고도 그만큼 늘어납니다. <b>둘을 동시에 줄일 수는 없습니다.</b>";
+    $("p3jump").textContent="10초 한번에";
+  } else {
+    msg="연결을 <b>한 번만</b> 열어두고 기다립니다. 요청 수는 1번인데 새 소식은 <b>즉시</b> 옵니다.<br>"+
+        "헛수고가 0인 것을 보세요. 이것이 WebSocket 방식입니다.";
+    $("p3jump").textContent="10초 한번에";
+  }
+  setHint("p3hint",msg, P3.mode==="live"?"good":(P3.mode==="poll"?"warn":null));
+  say("p3say","방법 = "+(P3.mode==="manual"?"수동 새로고침":P3.mode==="poll"?"2초마다 물어보기":"연결 유지")+
+    " · 보낸 요청 <b>"+P3.reqs+"번</b> · 헛수고 <b>"+P3.waste+"번</b> · 화면은 "+(stale?"<b>낡음</b>":"최신"));
+}
+function p3Bind(){
+  fill("p3mode",[{v:"manual",t:"① 내가 새로고침"},{v:"poll",t:"② 2초마다 물어보기"},{v:"live",t:"③ 연결 유지 (WebSocket)"}],"manual");
+  $("p3mode").addEventListener("change",function(e){ P3.mode=e.target.value; p3Reset(); });
+  on("p3step",p3Tick);
+  on("p3jump",function(){
+    if(P3.mode==="manual"){ p3Refresh(); return; }
+    for(var i=0;i<10;i++) p3Tick();
+  });
+  on("p3reset",p3Reset);
+  p3Reset();
+
+  var C={cut:false};
+  function cRender(){
+    var box=$("p3conn");
+    box.innerHTML="";
+    var steps=[
+      {n:"내 화면",s:"브라우저"},
+      {n:C.cut?"끊어짐":"연결됨",s:C.cut?"선이 죽었습니다":"선이 열려 있음"},
+      {n:"가게 서버",s:"새 주문 발생 중"}
+    ];
+    steps.forEach(function(S,i){
+      if(i>0) box.appendChild(el("div","farrow", C.cut?"✕":"↔"));
+      var d=el("div","fnode");
+      d.setAttribute("data-on", (!C.cut && i===1)?"1":"0");
+      d.appendChild(el("div","fn",S.n));
+      d.appendChild(el("span","fs",S.s));
+      box.appendChild(d);
+    });
+    if(!C.cut){
+      setHint("p3chint","연결이 살아 있습니다. 서버에 새 주문이 생기면 곧바로 화면에 나타납니다.");
+    } else {
+      setHint("p3chint","<b>연결이 끊겼습니다.</b> 그런데 화면에는 아무 표시도 나지 않습니다. "+
+        "숫자는 그대로 떠 있어서 <b>사용자는 최신인 줄 압니다.</b><br>"+
+        "그래서 실제로 만들 때는 ① 끊긴 걸 알아채고 ② 다시 연결하고 ③ 그동안 놓친 것을 채워 넣는 "+
+        "세 가지를 직접 만들어야 합니다. 새로고침 방식에는 없던 숙제입니다.","bad");
+    }
+  }
+  on("p3cut",function(){ C.cut=true; cRender(); });
+  on("p3fix",function(){ C.cut=false; cRender(); });
+  cRender();
+}
+
+/* ════ 4교시 ════ */
+var P4={tool:false, step:0, n:2, m:3};
+var P4Q=[
+  {q:"파이썬에서 목록을 정렬하려면?", need:false,
+   yes:"<b>답할 수 있습니다.</b> 이건 배워서 알고 있는 지식입니다. 어디를 들여다볼 필요가 없습니다."},
+  {q:"내 컴퓨터의 이 폴더에 파일이 뭐가 있어?", need:true,
+   no:"<b>답할 수 없습니다.</b> 몰라서가 아니라 <b>볼 방법이 없어서</b>입니다. AI는 내 컴퓨터 안을 들여다볼 수 없습니다.",
+   yes:"<b>이제 답할 수 있습니다.</b> 폴더를 읽는 도구가 붙어서, AI가 그 도구를 불러 목록을 받아옵니다."},
+  {q:"우리 회사 주문 시스템에 오늘 주문이 몇 건이야?", need:true,
+   no:"<b>답할 수 없습니다.</b> 회사 시스템은 AI가 알 수 있는 곳이 아닙니다. 학습한 적도 없고 접근할 수도 없습니다.",
+   yes:"<b>이제 답할 수 있습니다.</b> 주문 시스템을 부르는 도구가 붙었기 때문입니다. 5교시에 이걸 직접 만듭니다."},
+  {q:"세종대왕이 훈민정음을 만든 해는?", need:false,
+   yes:"<b>답할 수 있습니다.</b> 널리 알려진 지식이라 이미 알고 있습니다."}
+];
+function p4Render(){
+  $("p4tool").setAttribute("aria-pressed",P4.tool?"true":"false");
+  $("p4tool").textContent=P4.tool?"도구 연결됨 (끄기)":"도구 연결하기";
+  setHTML("p4toolnote", P4.tool
+    ? "폴더 읽기 · 주문 조회 도구가 붙어 있습니다"
+    : "지금은 아무 도구도 붙어 있지 않습니다");
+  var box=$("p4qs");
+  box.innerHTML="";
+  P4Q.forEach(function(Q,i){
+    var can = !Q.need || P4.tool;
+    var b=el("button","pickrow"); b.type="button";
+    b.appendChild(el("span","qn",Q.q));
+    b.appendChild(el("span","tag "+(can?"ok":"no"), can?"답할 수 있음":"답할 수 없음"));
+    b.addEventListener("click",function(){
+      var rows=box.querySelectorAll(".pickrow");
+      for(var j=0;j<rows.length;j++) rows[j].setAttribute("data-hot", j===i?"1":"0");
+      setHTML("p4cap", can ? Q.yes : Q.no);
+    });
+    box.appendChild(b);
+  });
+  var blocked=P4Q.filter(function(Q){ return Q.need && !P4.tool; }).length;
+  say("p4say", P4.tool
+    ? "도구를 붙이니 <b>네 질문 모두</b> 답할 수 있게 되었습니다. AI가 똑똑해진 게 아니라 <b>닿을 수 있는 곳이 늘어난</b> 것입니다."
+    : "지금은 <b>"+blocked+"개 질문</b>에 답하지 못합니다. 아는 것과 <b>볼 수 있는 것</b>은 다릅니다.");
+}
+var P4STEPS=[
+  {n:"사용자",s:"\u201C이 폴더에 뭐 있어?\u201D", h:"사용자가 평소처럼 물어봅니다. 도구가 있다는 걸 몰라도 됩니다."},
+  {n:"AI",s:"도구가 필요하겠는데", h:"AI가 <b>스스로 판단</b>합니다. \u201C이건 내가 아는 게 아니라 봐야 아는 거구나\u201D 하고 도구를 고릅니다."},
+  {n:"도구",s:"폴더 목록 읽기", h:"MCP 서버의 도구가 실행됩니다. 실제로 폴더를 읽는 것은 <b>이 프로그램</b>이지 AI가 아닙니다."},
+  {n:"AI",s:"결과를 받아 정리", h:"도구가 돌려준 결과를 받아 사람이 읽기 좋게 정리합니다."},
+  {n:"사용자",s:"\u201C파일 3개가 있네요\u201D", h:"사용자에게는 그냥 <b>대답 한 줄</b>로 보입니다. 뒤에서 이 과정이 오갔다는 것은 드러나지 않습니다."}
+];
+function p4Flow(){
+  var box=$("p4flow");
+  box.innerHTML="";
+  P4STEPS.forEach(function(S,i){
+    if(i>0) box.appendChild(el("div","farrow", i<=P4.step?"→":"·"));
+    var d=el("div","fnode");
+    d.setAttribute("data-on", i===P4.step?"1":"0");
+    d.appendChild(el("div","fn",S.n));
+    d.appendChild(el("span","fs",S.s));
+    box.appendChild(d);
+  });
+  setHint("p4fhint","<b>"+(P4.step+1)+"단계</b> · "+P4STEPS[P4.step].h,
+    P4.step===P4STEPS.length-1?"good":null);
+  $("p4next").disabled=(P4.step>=P4STEPS.length-1);
+}
+function p4Nm(){
+  var box=$("p4nm");
+  box.innerHTML="";
+  var H=Math.max(P4.n,P4.m)*34+26;
+  function nodes(x,count,color,label){
+    var s="";
+    for(var i=0;i<count;i++){
+      var y=22+i*34;
+      s+='<rect x="'+x+'" y="'+(y-11)+'" width="70" height="22" rx="5" fill="'+color+'"/>'+
+         '<text x="'+(x+35)+'" y="'+(y+5)+'" text-anchor="middle" font-size="10.5" fill="#fff">'+label+(i+1)+'</text>';
+    }
+    return s;
+  }
+  var s1='<svg viewBox="0 0 300 '+H+'" role="img" aria-label="따로 붙일 때">';
+  for(var a=0;a<P4.n;a++) for(var b=0;b<P4.m;b++)
+    s1+='<line x1="80" y1="'+(22+a*34)+'" x2="220" y2="'+(22+b*34)+'" stroke="#B33B36" stroke-width="1.2" opacity=".5"/>';
+  s1+=nodes(10,P4.n,"#4A56A6","AI")+nodes(220,P4.m,"#2F6B4F","도구")+'</svg>';
+
+  var mid=H/2;
+  var s2='<svg viewBox="0 0 300 '+H+'" role="img" aria-label="MCP 를 쓸 때">';
+  for(var a2=0;a2<P4.n;a2++) s2+='<line x1="80" y1="'+(22+a2*34)+'" x2="126" y2="'+mid+'" stroke="#4A56A6" stroke-width="1.4"/>';
+  for(var b2=0;b2<P4.m;b2++) s2+='<line x1="174" y1="'+mid+'" x2="220" y2="'+(22+b2*34)+'" stroke="#4A56A6" stroke-width="1.4"/>';
+  s2+='<rect x="126" y="'+(mid-14)+'" width="48" height="28" rx="6" fill="#4A56A6"/>'+
+      '<text x="150" y="'+(mid+5)+'" text-anchor="middle" font-size="10.5" fill="#fff">MCP</text>';
+  s2+=nodes(10,P4.n,"#4A56A6","AI")+nodes(220,P4.m,"#2F6B4F","도구")+'</svg>';
+
+  function card(title,sub,svg,st){
+    var d=el("div","card");
+    d.appendChild(el("div","ct",title));
+    var w=el("div"); w.innerHTML=svg; d.appendChild(w);
+    d.appendChild(el("div","ct",sub));
+    if(st) d.style.borderColor = st==="no" ? "rgba(179,59,54,.5)" : "rgba(47,107,79,.5)";
+    return d;
+  }
+  var direct=P4.n*P4.m, via=P4.n+P4.m;
+  box.appendChild(card("공통 약속이 없을 때","선 "+direct+"개 — 앱마다 도구마다 따로 만들어야 합니다",s1,"no"));
+  box.appendChild(card("MCP 를 쓸 때","선 "+via+"개 — 각자 약속 하나만 지키면 됩니다",s2,"ok"));
+  setHint("p4nhint","지금은 <b>"+direct+"개 대 "+via+"개</b> 입니다. 숫자보다 <b>늘어나는 방식</b>을 보세요.<br>"+
+    "도구를 하나 더 붙일 때 왼쪽은 AI 앱 수만큼(<b>+"+P4.n+"개</b>) 늘고, 오른쪽은 언제나 <b>+1개</b>입니다. "+
+    "AI 앱을 4개로 늘려 보면 차이가 더 크게 벌어집니다.");
+}
+function p4Bind(){
+  on("p4tool",function(){ P4.tool=!P4.tool; p4Render(); });
+  p4Render();
+  on("p4next",function(){ if(P4.step<P4STEPS.length-1){ P4.step++; p4Flow(); } });
+  on("p4sreset",function(){ P4.step=0; p4Flow(); });
+  p4Flow();
+  fill("p4n",["1","2","3","4"],"2");
+  fill("p4m",["1","2","3","4","5"],"3");
+  $("p4n").addEventListener("change",function(e){ P4.n=parseInt(e.target.value,10); p4Nm(); });
+  $("p4m").addEventListener("change",function(e){ P4.m=parseInt(e.target.value,10); p4Nm(); });
+  p4Nm();
+}
+
+/* ════ 5교시 ════ */
+var P5MAP={
+  deco:"<b>이 한 줄이 도구로 만듭니다</b> · 평범한 파이썬 함수 위에 <span class='word'>@mcp.tool()</span> 을 붙이면 AI가 부를 수 있는 도구가 됩니다. 2교시의 <span class='word'>@app.get</span> 과 생김새가 비슷하죠.",
+  name:"<b>함수 이름이 도구 이름</b> · AI는 이 이름으로 도구를 부릅니다. 그래서 이름만 봐도 무슨 일을 하는지 알 수 있게 지어야 합니다.",
+  arg:"<b>입력 항목이 됩니다</b> · <span class='word'>order_id: int</span> 라고 적으면, AI에게는 \u201C숫자 하나를 넣는 칸\u201D 으로 보입니다. 타입을 적어야 칸의 종류가 정해집니다.",
+  doc:"<b>설명문이 사용 안내가 됩니다</b> · 따옴표 세 개 안의 글이 그대로 AI에게 전달됩니다. <b>AI는 코드를 읽지 않고 이 글만 읽습니다.</b>",
+  body:"<b>실제 하는 일</b> · 여기는 AI에게 보이지 않습니다. 2교시에 만든 내 API를 부르는 평범한 코드일 뿐입니다."
+};
+function p5Bind(){
+  setHTML("p5code",
+    '<span class="y z" data-k="deco">@mcp.tool()</span>\n'+
+    '<span class="d">def</span> <span class="z" data-k="name">get_order</span>(<span class="z" data-k="arg">order_id: int</span>):\n'+
+    '    <span class="g z" data-k="doc">"""주문 번호로 주문 하나를 조회합니다.\n\n'+
+    '    번호를 이미 알고 있을 때 사용하세요.\n'+
+    '    """</span>\n'+
+    '    <span class="z" data-k="body">r = httpx.get(f"{BASE}/orders/{order_id}")\n'+
+    '    return r.json()</span>');
+  setHTML("p5view",
+    '<span class="d">AI 가 받는 도구 목록</span>\n\n'+
+    '도구 이름: <span class="y z" data-k="name">get_order</span>\n\n'+
+    '설명: <span class="g z" data-k="doc">주문 번호로 주문 하나를 조회합니다.\n'+
+    '      번호를 이미 알고 있을 때 사용하세요.</span>\n\n'+
+    '입력: <span class="b z" data-k="arg">order_id (숫자, 필수)</span>\n\n'+
+    '<span class="d z" data-k="body">(안에서 무슨 코드가 도는지는\n 보이지 않습니다)</span>');
+  var bind=linkZones(["p5code","p5view"],function(k){ setHTML("p5cap",P5MAP[k]); });
+  bind();
+  say("p5say","AI는 <b>이름 · 설명 · 입력 칸</b> 세 가지만 봅니다. 코드는 보지 않습니다.");
+
+  var MODES=[
+    {k:"vague",lab:"대충 쓴 설명",
+     tools:'도구 1 · list_orders\n  설명: <span class="r">주문을 다룹니다</span>\n\n도구 2 · cancel_order\n  설명: <span class="r">주문을 다룹니다</span>',
+     pick:'<span class="y">AI:</span> 둘 다 \u201C주문을 다룹니다\u201D 인데…\n\n<span class="r">→ cancel_order 를 골랐습니다</span>\n<span class="r">   (주문이 취소되었습니다)</span>',
+     hint:"<b>보여달라고 했는데 취소되었습니다.</b> 두 설명이 똑같아서 AI가 구분할 수 없었기 때문입니다.<br>"+
+          "코드는 완벽했습니다. <b>설명만 대충 썼을 뿐인데</b> 사고가 났습니다.",kind:"bad"},
+    {k:"clear",lab:"제대로 쓴 설명",
+     tools:'도구 1 · list_orders\n  설명: <span class="g">주문 목록을 보여줍니다.\n        아무것도 바꾸지 않습니다.</span>\n\n'+
+           '도구 2 · cancel_order\n  설명: <span class="g">주문을 취소합니다. 되돌릴 수 없으니\n        사용자가 명확히 취소를 요청했을 때만\n        사용하세요.</span>',
+     pick:'<span class="y">AI:</span> \u201C보여줘\u201D 니까 바꾸지 않는 쪽\n\n<span class="g">→ list_orders 를 골랐습니다</span>\n<span class="g">   (주문 목록을 보여줍니다)</span>',
+     hint:"<b>제대로 골랐습니다.</b> 설명에 \u201C아무것도 바꾸지 않습니다\u201D, \u201C명확히 요청했을 때만\u201D 같은 "+
+          "<b>언제 쓰고 언제 쓰지 않는지</b>가 들어 있었기 때문입니다.<br>"+
+          "설명문은 소개 글이 아니라 <b>AI에게 주는 사용 지침</b>이라고 생각하고 쓰세요.",kind:"good"}
+  ];
+  var S={k:"vague"};
+  function sRender(){
+    var box=$("p5modes");
+    if(!box.children.length){
+      MODES.forEach(function(M){
+        var b=el("button","btn",M.lab); b.id="p5m-"+M.k;
+        b.addEventListener("click",function(){ S.k=M.k; sRender(); });
+        box.appendChild(b);
+      });
+    }
+    MODES.forEach(function(M){ $("p5m-"+M.k).setAttribute("aria-pressed",S.k===M.k?"true":"false"); });
+    var c=MODES.filter(function(M){ return M.k===S.k; })[0];
+    setHTML("p5tools",c.tools);
+    setHTML("p5pick",c.pick);
+    setHint("p5hint",c.hint,c.kind);
+  }
+  sRender();
+
+  var PERMS=[
+    {k:"read",lab:"보기 도구만 붙임"},
+    {k:"write",lab:"보기 + 만들기"},
+    {k:"all",lab:"보기 + 만들기 + 취소"}
+  ];
+  var PACTS=[
+    {q:"주문 목록 보여줘", need:"read"},
+    {q:"주문 하나 새로 만들어줘", need:"write"},
+    {q:"주문 전부 취소해줘", need:"all"}
+  ];
+  var LV={read:1,write:2,all:3};
+  var PP={k:"read"};
+  function pRender(){
+    var box=$("p5perms");
+    if(!box.children.length){
+      PERMS.forEach(function(P){
+        var b=el("button","btn",P.lab); b.id="p5p-"+P.k;
+        b.addEventListener("click",function(){ PP.k=P.k; pRender(); });
+        box.appendChild(b);
+      });
+    }
+    PERMS.forEach(function(P){ $("p5p-"+P.k).setAttribute("aria-pressed",PP.k===P.k?"true":"false"); });
+    var ab=$("p5acts");
+    ab.innerHTML="";
+    PACTS.forEach(function(A){
+      var can = LV[PP.k] >= LV[A.need];
+      var r=el("div","pickrow static");
+      r.appendChild(el("span","qn",'\u201C'+A.q+'\u201D'));
+      r.appendChild(el("span","tag "+(can?"ok":"dm"), can?"할 수 있음":"도구가 없어 못 함"));
+      ab.appendChild(r);
+    });
+    var msg;
+    if(PP.k==="read") msg="보기 도구만 붙였습니다. 누가 무슨 말을 해도 <b>AI가 바꿀 수 있는 것은 없습니다.</b><br>"+
+      "가장 안전한 상태입니다. 시작은 늘 여기서 하세요.";
+    else if(PP.k==="write") msg="만들기까지 가능해졌습니다. 편해졌지만 <b>실수로 주문이 생길 수도</b> 있습니다.";
+    else msg="취소까지 붙였습니다. 편리하지만 <b>가장 위험한 상태</b>입니다.<br>"+
+      "AI가 읽은 문서 안에 \u201C모두 취소해\u201D 같은 문장이 숨어 있으면, AI는 그게 지시인지 그냥 글자인지 구분하지 못합니다.<br>"+
+      "그래서 <b>위험한 도구는 아예 안 붙이는 것</b>이 가장 확실한 방법입니다.";
+    setHint("p5phint",msg, PP.k==="read"?"good":(PP.k==="all"?"bad":"warn"));
+  }
+  pRender();
+}
+
+/* ════ 6교시 ════ */
+var P6={have:"none"};
+var P6ASKS=[
+  {q:"우리 주문 목록 좀 가져와줘", need:"tool",
+   nomsg:"<b>못 합니다.</b> 회사 시스템에 닿을 방법이 없습니다. 이건 <b>능력</b>의 문제라 도구(MCP)가 필요합니다.",
+   okmsg:"<b>됩니다.</b> MCP 도구가 붙어 있어 주문 시스템을 부를 수 있습니다."},
+  {q:"이 주문들을 우리 회사 보고서 양식대로 정리해줘", need:"skill",
+   nomsg:"<b>어설프게 합니다.</b> 정리 자체는 하지만 매번 표 모양도 순서도 다릅니다. "+
+         "우리 회사 양식을 모르니까요. 도구를 더 붙여도 해결되지 않습니다 — 이건 <b>방법</b>의 문제입니다.",
+   okmsg:"<b>됩니다.</b> Skill 에 표 구성과 반올림 규칙이 적혀 있어 매번 같은 모양으로 나옵니다."},
+  {q:"주문 데이터를 가져와서 회사 양식 보고서로 만들어줘", need:"both",
+   nomsg:"<b>둘 다 부족합니다.</b> 데이터를 가져올 능력과 양식대로 만들 방법이 <b>모두</b> 필요한 부탁입니다.",
+   okmsg:"<b>됩니다.</b> 데이터는 <b>도구(MCP)</b> 가 가져오고, 양식은 <b>방법(Skill)</b> 이 알려 줍니다. 둘은 층이 다릅니다."}
+];
+function p6Render(){
+  var have=P6.have;
+  var box=$("p6haves");
+  if(!box.children.length){
+    [{k:"none",lab:"아무것도 없음"},{k:"tool",lab:"MCP 도구만"},{k:"skill",lab:"Skill 만"},{k:"both",lab:"둘 다"}].forEach(function(o){
+      var b=el("button","btn",o.lab); b.id="p6h-"+o.k;
+      b.addEventListener("click",function(){ P6.have=o.k; p6Render(); });
+      box.appendChild(b);
+    });
+  }
+  ["none","tool","skill","both"].forEach(function(k){ $("p6h-"+k).setAttribute("aria-pressed",have===k?"true":"false"); });
+
+  function has(x){ return have==="both" || have===x; }
+  var ab=$("p6asks");
+  ab.innerHTML="";
+  var okCount=0;
+  P6ASKS.forEach(function(A,i){
+    var ok = A.need==="both" ? (have==="both") : has(A.need);
+    if(ok) okCount++;
+    var b=el("button","pickrow"); b.type="button";
+    b.appendChild(el("span","qn",'\u201C'+A.q+'\u201D'));
+    b.appendChild(el("span","tag "+(ok?"ok":"no"), ok?"잘 됨":"안 됨"));
+    b.addEventListener("click",function(){
+      var rows=ab.querySelectorAll(".pickrow");
+      for(var j=0;j<rows.length;j++) rows[j].setAttribute("data-hot", j===i?"1":"0");
+      setHTML("p6cap", ok ? A.okmsg : A.nomsg);
+    });
+    ab.appendChild(b);
+  });
+  say("p6say","붙인 것 = <b>"+({none:"없음",tool:"MCP 도구",skill:"Skill",both:"둘 다"})[have]+
+    "</b> · 해결된 부탁 <b>"+okCount+" / 3</b> &nbsp;—&nbsp; 도구는 <b>능력</b>, 스킬은 <b>방법</b>입니다.");
+}
+var P6SMAP={
+  fm:"<b>맨 위 세 줄이 이름표입니다</b> · 여닫는 <span class='word'>---</span> 사이에 적습니다. 이 부분만 항상 AI 눈에 띄어 있습니다.",
+  name:"<b>이름</b> · 폴더 이름과 똑같이 맞춰 줍니다. 영어 소문자와 하이픈만 씁니다.",
+  desc:"<b>설명 — 가장 중요한 줄</b> · <b>언제 이 안내서를 펴야 하는지</b>를 적습니다. 이 문장을 보고 AI가 쓸지 말지 정하므로, 여기가 모호하면 아예 불려 나오지 않습니다.",
+  body:"<b>본문</b> · 실제 방법을 적는 곳입니다. 설명을 보고 필요하다고 판단했을 때만 여기까지 읽습니다. 평소에는 읽지 않으니 길어도 부담이 적습니다.",
+  ref:"<b>더 긴 내용은 따로</b> · 색상표처럼 길고 가끔 필요한 것은 다른 파일로 빼고 여기서 가리킵니다. 본문이 너무 길어지면 매번 무거워지기 때문입니다."
+};
+function p6Skill(){
+  setHTML("p6skill",
+    '<span class="z" data-k="fm">---</span>\n'+
+    '<span class="y z" data-k="name">name: order-report</span>\n'+
+    '<span class="y z" data-k="desc">description: 주문 데이터로 월간 매출 보고서를\n'+
+    '  회사 표준 양식으로 만들 때 사용합니다.</span>\n'+
+    '<span class="z" data-k="fm">---</span>\n\n'+
+    '<span class="z" data-k="body"># 주문 매출 보고서 만드는 법\n\n'+
+    '1. 주문을 품목별로 묶는다\n'+
+    '2. 합계는 원 단위에서 반올림한다\n'+
+    '3. 표는 품목 / 수량 / 매출 순서로 만든다\n'+
+    '4. 줄어든 항목은 빨간색으로 표시한다</span>\n\n'+
+    '<span class="d z" data-k="ref">자세한 색상표는 references/style.md 참고</span>');
+  var bind=linkZones(["p6skill"],function(k){ setHTML("p6scap",P6SMAP[k]); });
+  bind();
+}
+function p6Bind(){
+  p6Render();
+  p6Skill();
+
+  var REQS=[
+    {q:"3월 매출 보고서 만들어줘", want:true},
+    {q:"이 주문들로 분기 보고서 초안 잡아줘", want:true},
+    {q:"사진 파일 이름 좀 바꿔줘", want:false},
+    {q:"파이썬으로 계산기 만들어줘", want:false}
+  ];
+  var DESCS=[
+    {k:"vague",lab:"너무 짧게",
+     text:'description: 문서를 다룹니다',
+     fire:[false,false,false,false],
+     hint:"<b>두 번 놓쳤습니다.</b> \u201C문서\u201D 만으로는 언제 필요한지 알 수 없어서, 정작 써야 할 때 안내서가 펴지지 않습니다.<br>"+
+          "\u201C스킬을 만들었는데 안 뜬다\u201D 는 대부분 이 문제입니다."},
+    {k:"broad",lab:"너무 넓게",
+     text:'description: 파일, 데이터, 문서 등 모든 작업에 사용',
+     fire:[true,true,true,true],
+     hint:"<b>두 번 잘못 떴습니다.</b> 사진 이름 바꾸기나 계산기 만들기에까지 보고서 규칙을 들고 나옵니다.<br>"+
+          "넓게 쓰면 놓치는 건 줄지만 <b>엉뚱한 데 끼어듭니다.</b>"},
+    {k:"good",lab:"알맞게",
+     text:'description: 주문 데이터로 월간·분기 매출 보고서를\n  회사 표준 양식으로 만들 때 사용합니다',
+     fire:[true,true,false,false],
+     hint:"<b>네 번 모두 맞았습니다.</b> \u201C무엇을\u201D 뿐 아니라 <b>\u201C언제\u201D</b> 가 들어 있어서 구분이 생겼습니다.<br>"+
+          "설명은 소개 글이 아니라 <b>펴야 할 때를 알려주는 신호</b>입니다."}
+  ];
+  var D={k:"vague"};
+  function dRender(){
+    var box=$("p6descs");
+    if(!box.children.length){
+      DESCS.forEach(function(o){
+        var b=el("button","btn",o.lab); b.id="p6d-"+o.k;
+        b.addEventListener("click",function(){ D.k=o.k; dRender(); });
+        box.appendChild(b);
+      });
+    }
+    DESCS.forEach(function(o){ $("p6d-"+o.k).setAttribute("aria-pressed",D.k===o.k?"true":"false"); });
+    var c=DESCS.filter(function(o){ return o.k===D.k; })[0];
+    setHTML("p6desc",'<span class="d">---</span>\n<span class="y">name: order-report</span>\n<span class="y">'+c.text+'</span>\n<span class="d">---</span>');
+    var box2=$("p6fires");
+    box2.innerHTML="";
+    var wrong=0;
+    REQS.forEach(function(R,i){
+      var f=c.fire[i], good=(f===R.want);
+      if(!good) wrong++;
+      var r=el("div","tlrow"+(good?"":" bad"));
+      r.appendChild(el("span","ic", f?"펴짐":"안 펴짐"));
+      r.appendChild(el("span","tx",'\u201C'+R.q+'\u201D'));
+      var lab = good ? (R.want?"맞게 펴짐":"맞게 넘어감") : (f?"엉뚱하게 펴짐":"펴져야 하는데 안 펴짐");
+      r.appendChild(el("span","tag "+(good?"ok":"no"),lab));
+      box2.appendChild(r);
+    });
+    setHint("p6dhint",c.hint+"<br><span class=\"inl\">틀린 판단 "+wrong+"번 / 4번 중</span>", wrong===0?"good":"bad");
+  }
+  dRender();
+
+  var CASES=[
+    {q:"협력사 시스템이 우리 주문을 가져가야 한다", a:"API",
+     w:"<b>API</b> · 사람이든 프로그램이든 <b>요청하면 답해주는</b> 창구가 필요합니다. 1·2교시 내용입니다."},
+    {q:"주문이 들어오면 매장 화면이 저절로 바뀌어야 한다", a:"WebSocket",
+     w:"<b>WebSocket</b> (또는 SSE) · 새로고침 없이 <b>서버가 먼저 알려주는</b> 방식이 필요합니다. 3교시 내용입니다.<br>"+
+       "다만 끊김을 스스로 챙겨야 하는 숙제가 따라옵니다."},
+    {q:"AI 비서가 우리 주문 시스템을 조회하게 하고 싶다", a:"MCP",
+     w:"<b>MCP</b> · AI에게 <b>닿을 수 있는 길</b>을 열어주는 것입니다. 4·5교시 내용이고, "+
+       "<b>API가 먼저 있어야</b> 그 위에 얹을 수 있습니다."},
+    {q:"AI가 우리 회사 보고서 양식대로 쓰게 하고 싶다", a:"Skill",
+     w:"<b>Skill</b> · 할 수는 있는데 <b>우리 방식을 모르는</b> 경우입니다. 도구를 더 붙여도 해결되지 않습니다."},
+    {q:"AI가 재고를 확인하고 회사 규칙대로 발주하게 하고 싶다", a:"MCP + Skill",
+     w:"<b>둘 다</b> · 재고에 닿는 것은 MCP, 발주 기준은 Skill 입니다.<br>"+
+       "오늘 배운 넷은 서로 경쟁하는 게 아니라 <b>층층이 쌓입니다.</b>"}
+  ];
+  var cb=$("p6cases");
+  CASES.forEach(function(C,i){
+    var b=el("button","pickrow"); b.type="button";
+    b.appendChild(el("span","qn",C.q));
+    b.appendChild(el("span","tag dm","?"));
+    b.addEventListener("click",function(){
+      var rows=cb.querySelectorAll(".pickrow");
+      for(var j=0;j<rows.length;j++){
+        rows[j].setAttribute("data-hot", j===i?"1":"0");
+        var t=rows[j].querySelector(".tag");
+        t.textContent = j===i ? CASES[j].a : "?";
+        t.className = j===i ? "tag ok" : "tag dm";
+      }
+      setHTML("p6ccap",C.w);
+    });
+    cb.appendChild(b);
+  });
+}
+
+/* ── 시작 ── */
+p1Bind(); p2Bind(); p3Bind(); p4Bind(); p5Bind(); p6Bind();
+go(0);
+</script>
+</body>
+</html>
